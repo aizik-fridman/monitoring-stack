@@ -1,4 +1,4 @@
-# Prometheus-Grafana-Kit
+# My Monitoring stack
 
 A reference observability platform for collecting, querying, retaining, and
 alerting on application and infrastructure telemetry. Docker Compose provides
