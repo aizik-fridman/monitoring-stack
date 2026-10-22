@@ -1,0 +1,88 @@
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 10Gi
+  service:
+    type: ClusterIP
+  sidecar:
+    dashboards:
+      enabled: true
+    datasources:
+      enabled: true
+  additionalDataSources:
+    - name: Thanos
+      uid: thanos
+      type: prometheus
+      access: proxy
+      url: http://thanos-query.monitoring.svc:9090
+      isDefault: true
+      jsonData:
+        httpMethod: POST
+        prometheusType: Thanos
+    - name: VictoriaMetrics
+      uid: victoriametrics
+      type: prometheus
+      access: proxy
+      url: http://vm-cluster-victoria-metrics-single-server.monitoring.svc:8428
+    - name: Tempo
+      uid: tempo
+      type: tempo
+      access: proxy
+      url: http://tempo-query-frontend.monitoring.svc:3200
+    - name: Loki
+      uid: loki
+      type: loki
+      access: proxy
+      url: http://loki-gateway.monitoring.svc
+      jsonData:
+        httpHeaderName1: X-Scope-OrgID
+      secureJsonData:
+        httpHeaderValue1: production
+
+prometheus:
+  prometheusSpec:
+    replicas: 2
+    retention: 48h
+    retentionSize: 40GB
+    serviceAccountName: thanos
+    externalLabels:
+      cluster: production
+    remoteWrite:
+      - url: http://vm-cluster-victoria-metrics-single-server.monitoring.svc:8428/api/v1/write
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+    thanos:
+      objectStorageConfig:
+        existingSecret:
+          name: thanos-object-storage
+          key: objstore.yml
+
+alertmanager:
+  alertmanagerSpec:
+    replicas: 2
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+windowsMonitoring:
+  enabled: true

@@ -1,0 +1,41 @@
+gateway:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: tempo
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_TERRAFORM_TEMPO_IRSA_ROLE_ARN
+
+distributor:
+  replicas: 2
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+ingester:
+  replicas: 3
+  persistence:
+    enabled: true
+    size: 20Gi
+
+querier:
+  replicas: 2
+
+compactor:
+  replicas: 1
+
+storage:
+  trace:
+    backend: s3
+    s3:
+      bucket: REPLACE_WITH_TERRAFORM_TEMPO_BUCKET
+      endpoint: s3.us-east-1.amazonaws.com
+      region: us-east-1
+      insecure: false
+      # Do not put static AWS access keys in Helm values.

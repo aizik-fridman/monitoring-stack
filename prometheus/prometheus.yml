@@ -1,26 +1,42 @@
-###############################################################################
-# Prometheus Configuration
-###############################################################################
-
 global:
-  scrape_interval: 15s        # How often to scrape targets
-  evaluation_interval: 15s    # How often to evaluate rules
-  scrape_timeout: 10s         # Per-target scrape timeout
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: local
+    replica: prometheus-0
 
-# -----------------------------------------------------------------------------
-# Scrape Configurations
-# -----------------------------------------------------------------------------
 scrape_configs:
-  # Prometheus self-monitoring
-  - job_name: "prometheus"
+  - job_name: prometheus
     static_configs:
-      - targets: ["localhost:9090"]
-        labels:
-          instance: "prometheus-server"
+      - targets: ["prometheus:9090"]
 
-  # Host-level metrics via Node Exporter
-  - job_name: "node-exporter"
+  - job_name: node-exporter
     static_configs:
       - targets: ["node-exporter:9100"]
         labels:
-          instance: "docker-host"
+          instance: docker-host
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # Add kube-state-metrics and windows-exporter targets when those exporters
+  # are available in the environment. They are deployed by the Kubernetes
+  # examples under kubernetes/.
+  # - job_name: kube-state-metrics
+  #   static_configs:
+  #     - targets: ["kube-state-metrics:8080"]
+  # - job_name: windows-exporter
+  #   static_configs:
+  #     - targets: ["host.docker.internal:9182"]
+
+  # Optional development target from the original repository configuration.
+  # - job_name: synthetic-exporter
+  #   static_configs:
+  #     - targets: ["host.docker.internal:10050"]
+  #       labels:
+  #         instance: me
+
+remote_write:
+  - url: http://victoria-metrics:8428/api/v1/write

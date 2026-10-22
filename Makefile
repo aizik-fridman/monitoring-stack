@@ -18,8 +18,10 @@ help: ## Show this help message
 up: validate ## Start the full observability stack (detached)
 	$(COMPOSE) up -d
 	@echo ""
-	@echo "  Prometheus  →  http://localhost:9090"
-	@echo "  Grafana     →  http://localhost:3000  (admin / admin)"
+	@echo "  Prometheus  ->  http://localhost:9090"
+	@echo "  Grafana     ->  http://localhost:3000  (credentials from .env)"
+	@echo "  Thanos      ->  http://localhost:9091"
+	@echo "  VictoriaMetrics -> http://localhost:8428"
 	@echo ""
 
 down: ## Stop and remove all containers

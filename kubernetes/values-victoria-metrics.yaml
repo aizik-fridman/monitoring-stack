@@ -1,0 +1,12 @@
+server:
+  replicaCount: 2
+  retentionPeriod: 30d
+  persistentVolume:
+    enabled: true
+    size: 100Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      memory: 4Gi

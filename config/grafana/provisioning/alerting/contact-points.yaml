@@ -1,0 +1,11 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: local-webhook
+    receivers:
+      - uid: local-webhook
+        type: webhook
+        settings:
+          url: http://alert-webhook:8080/alerts
+          httpMethod: POST
