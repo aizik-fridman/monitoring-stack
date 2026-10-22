@@ -232,8 +232,12 @@ you deploy.
   Gateway object data. This avoids maintaining a separate Thanos Receive
   write path for this reference topology.
 - **MinIO isolates local object-storage dependencies.** Separate `thanos` and
-  `tempo` buckets model distinct retention and access boundaries. The shared
-  local credentials are development-only.
+  `tempo` buckets model distinct retention and access boundaries. Compose
+  pins the public Bitnami legacy MinIO image because the upstream MinIO
+  container registry rejects anonymous pulls; that archived image is for
+  local evaluation only. Use a currently supported object-storage distribution
+  or managed S3 in production. The shared local credentials are
+  development-only.
 - **Alloy collects Docker logs.** Its Docker discovery component tails local
   container logs; Kubernetes uses a separate Alloy configuration and
   Kubernetes API discovery. Host/container log collection depends on access to

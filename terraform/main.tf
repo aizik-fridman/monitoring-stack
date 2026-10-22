@@ -29,13 +29,13 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.0"
 
-  name               = local.cluster_name
-  cidr               = var.vpc_cidr
-  azs                = slice(data.aws_availability_zones.available.names, 0, 3)
-  private_subnets    = local.private_subnets
-  public_subnets     = local.public_subnets
-  enable_nat_gateway = true
-  single_nat_gateway = true
+  name                 = local.cluster_name
+  cidr                 = var.vpc_cidr
+  azs                  = slice(data.aws_availability_zones.available.names, 0, 3)
+  private_subnets      = local.private_subnets
+  public_subnets       = local.public_subnets
+  enable_nat_gateway   = true
+  single_nat_gateway   = true
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -53,12 +53,12 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name                   = local.cluster_name
-  cluster_version                = var.kubernetes_version
-  cluster_endpoint_public_access = true
-  cluster_endpoint_private_access = true
+  cluster_name                             = local.cluster_name
+  cluster_version                          = var.kubernetes_version
+  cluster_endpoint_public_access           = true
+  cluster_endpoint_private_access          = true
   enable_cluster_creator_admin_permissions = true
-  enable_irsa                    = true
+  enable_irsa                              = true
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
@@ -193,7 +193,7 @@ resource "aws_iam_role" "tempo" {
 
 data "aws_iam_policy_document" "thanos_s3" {
   statement {
-    actions = ["s3:ListBucket"]
+    actions   = ["s3:ListBucket"]
     resources = [aws_s3_bucket.thanos.arn]
   }
   statement {
@@ -208,7 +208,7 @@ data "aws_iam_policy_document" "thanos_s3" {
 
 data "aws_iam_policy_document" "tempo_s3" {
   statement {
-    actions = ["s3:ListBucket"]
+    actions   = ["s3:ListBucket"]
     resources = [aws_s3_bucket.tempo.arn]
   }
   statement {
