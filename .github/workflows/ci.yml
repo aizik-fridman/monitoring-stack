@@ -44,9 +44,10 @@ jobs:
       - name: Validate Prometheus configuration
         run: |
           docker run --rm \
+            --entrypoint promtool \
             --volume "$PWD/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
             prom/prometheus:v3.4.2 \
-            promtool check config /etc/prometheus/prometheus.yml
+            check config /etc/prometheus/prometheus.yml
 
       - name: Lint YAML files
         run: |
@@ -75,7 +76,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scan IaC and configuration
-        uses: aquasecurity/trivy-action@v0.30.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
           scan-ref: .

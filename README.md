@@ -151,7 +151,9 @@ Change `GF_ADMIN_PASSWORD` before sharing the environment. The MinIO
 development credentials are also referenced by the local Tempo and Thanos
 configuration files; if you change `MINIO_ROOT_USER` or
 `MINIO_ROOT_PASSWORD`, update those files to match. Never reuse these values
-in production.
+in production. The Compose configuration pins a public Bitnami legacy MinIO
+image to keep the local S3-compatible simulation pullable; it is not the
+upstream-maintained MinIO distribution and is not intended for production.
 
 | Component | Local endpoint | Notes |
 | --- | --- | --- |
