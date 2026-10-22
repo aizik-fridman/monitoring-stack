@@ -51,6 +51,15 @@ services:
       minio-init:
         condition: service_completed_successfully
 
+  thanos-volume-init:
+    image: busybox:1.37.0
+    user: "0:0"
+    restart: "no"
+    command: ["sh", "-c", "chown -R 1001:1001 /store /compact"]
+    volumes:
+      - thanos_store_data:/store
+      - thanos_compact_data:/compact
+
   thanos-store:
     image: quay.io/thanos/thanos:v0.39.2
     restart: unless-stopped
@@ -66,6 +75,8 @@ services:
     networks: [observability]
     depends_on:
       minio-init:
+        condition: service_completed_successfully
+      thanos-volume-init:
         condition: service_completed_successfully
 
   thanos-compact:
@@ -84,6 +95,8 @@ services:
     depends_on:
       minio-init:
         condition: service_completed_successfully
+      thanos-volume-init:
+        condition: service_completed_successfully
 
   thanos-query:
     image: quay.io/thanos/thanos:v0.39.2
@@ -93,8 +106,8 @@ services:
       - --http-address=0.0.0.0:10902
       - --grpc-address=0.0.0.0:10901
       - --query.replica-label=replica
-      - --store=thanos-sidecar:10901
-      - --store=thanos-store:10901
+      - --endpoint=thanos-sidecar:10901
+      - --endpoint=thanos-store:10901
     ports:
       - "9091:10902"
     networks: [observability]

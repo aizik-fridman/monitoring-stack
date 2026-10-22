@@ -236,7 +236,8 @@ you deploy.
 - **Thanos uses Sidecar plus object storage.** Completed TSDB blocks are
   uploaded to S3/MinIO. Thanos Query federates live Sidecar data with Store
   Gateway object data. This avoids maintaining a separate Thanos Receive
-  write path for this reference topology.
+  write path for this reference topology. A one-shot Compose initializer sets
+  ownership on the Store Gateway and Compactor data volumes before startup.
 - **MinIO isolates local object-storage dependencies.** Separate `thanos` and
   `tempo` buckets model distinct retention and access boundaries. Compose
   pins the public Bitnami legacy MinIO image because the upstream MinIO
