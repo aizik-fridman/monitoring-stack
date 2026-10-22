@@ -79,6 +79,9 @@ them to Loki. Grafana is provisioned with all four query backends.
 
 ```text
 Prometheus-Grafana-Kit/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── config/
 │   ├── alloy/
 │   │   └── config.alloy
