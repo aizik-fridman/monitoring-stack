@@ -140,11 +140,18 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-local-minio-password}
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - >-
-        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
-        mc ready local; do sleep 2; done &&
-        mc mb --ignore-existing local/thanos &&
-        mc mb --ignore-existing local/tempo
+      - |
+        for attempt in $$(seq 1 45); do
+          if mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1 &&
+             mc ready local >/dev/null 2>&1; then
+            mc mb --ignore-existing local/thanos &&
+            mc mb --ignore-existing local/tempo &&
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "MinIO did not become ready before bucket initialization timed out." >&2
+        exit 1
     networks: [observability]
 
   tempo:
