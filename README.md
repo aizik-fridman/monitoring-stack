@@ -218,9 +218,10 @@ docker run --rm -v "${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.
    multi-AZ capacity planning before production exposure.
 
 Terraform provisions a baseline VPC/EKS cluster with a private-only control
-plane endpoint, restricted node security-group egress, two private S3 buckets
-encrypted with separate rotating KMS keys, and separate IRSA roles restricted
-to each bucket and key. It intentionally
+plane endpoint, private EC2/ECR/STS/CloudWatch Logs and S3 VPC endpoints,
+restricted node security-group egress, two private S3 buckets encrypted with
+separate rotating KMS keys, and separate IRSA roles restricted to each bucket
+and key. It intentionally
 does not install Helm releases, configure DNS/TLS, or create a remote Terraform
 state backend. The Helm examples are starting overrides; review chart versions
 and chart-specific service account annotations against the exact chart releases

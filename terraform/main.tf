@@ -62,13 +62,21 @@ module "eks" {
   enable_irsa                                  = true
   node_security_group_enable_recommended_rules = false
   node_security_group_additional_rules = {
-    egress_https = {
-      description = "HTTPS to public repositories and AWS service endpoints"
+    egress_https_vpc = {
+      description = "HTTPS to private VPC interface endpoints"
       protocol    = "tcp"
       from_port   = 443
       to_port     = 443
       type        = "egress"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = [var.vpc_cidr]
+    }
+    egress_https_s3 = {
+      description     = "HTTPS to the regional S3 gateway endpoint"
+      protocol        = "tcp"
+      from_port       = 443
+      to_port         = 443
+      type            = "egress"
+      prefix_list_ids = [aws_vpc_endpoint.s3.prefix_list_id]
     }
     egress_dns_udp = {
       description = "DNS to the VPC resolver"
@@ -111,6 +119,56 @@ module "eks" {
   }
 
   tags = local.common_tags
+}
+
+resource "aws_security_group" "vpc_endpoints" {
+  name_prefix = "${local.cluster_name}-endpoints-"
+  description = "Allow private EKS subnets to access interface endpoints."
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    description = "HTTPS from the VPC"
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    description = "HTTPS within the VPC"
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_endpoint" "interface" {
+  for_each = toset(["ec2", "ecr.api", "ecr.dkr", "logs", "sts"])
+
+  vpc_id              = module.vpc.vpc_id
+  service_name        = "com.amazonaws.${var.region}.${each.value}"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.cluster_name}-${replace(each.value, ".", "-")}"
+  })
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = module.vpc.vpc_id
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = module.vpc.private_route_table_ids
+
+  tags = merge(local.common_tags, {
+    Name = "${local.cluster_name}-s3"
+  })
 }
 
 resource "aws_s3_bucket" "thanos" {
