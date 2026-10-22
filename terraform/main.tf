@@ -53,12 +53,48 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name                             = local.cluster_name
-  cluster_version                          = var.kubernetes_version
-  cluster_endpoint_public_access           = true
-  cluster_endpoint_private_access          = true
-  enable_cluster_creator_admin_permissions = true
-  enable_irsa                              = true
+  cluster_name                                 = local.cluster_name
+  cluster_version                              = var.kubernetes_version
+  cluster_endpoint_public_access               = false
+  cluster_endpoint_private_access              = true
+  cluster_endpoint_public_access_cidrs         = []
+  enable_cluster_creator_admin_permissions     = true
+  enable_irsa                                  = true
+  node_security_group_enable_recommended_rules = false
+  node_security_group_additional_rules = {
+    egress_https = {
+      description = "HTTPS to public repositories and AWS service endpoints"
+      protocol    = "tcp"
+      from_port   = 443
+      to_port     = 443
+      type        = "egress"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+    egress_dns_udp = {
+      description = "DNS to the VPC resolver"
+      protocol    = "udp"
+      from_port   = 53
+      to_port     = 53
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+    egress_dns_tcp = {
+      description = "TCP DNS to the VPC resolver"
+      protocol    = "tcp"
+      from_port   = 53
+      to_port     = 53
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+    ingress_node_to_node = {
+      description = "Cluster-internal node and pod traffic"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "ingress"
+      self        = true
+    }
+  }
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
@@ -89,6 +125,20 @@ resource "aws_s3_bucket" "tempo" {
   tags          = local.common_tags
 }
 
+resource "aws_kms_key" "thanos" {
+  description             = "Encrypts the Thanos object storage bucket."
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+  tags                    = local.common_tags
+}
+
+resource "aws_kms_key" "tempo" {
+  description             = "Encrypts the Tempo object storage bucket."
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+  tags                    = local.common_tags
+}
+
 resource "aws_s3_bucket_versioning" "thanos" {
   bucket = aws_s3_bucket.thanos.id
   versioning_configuration {
@@ -107,7 +157,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "thanos" {
   bucket = aws_s3_bucket.thanos.id
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.thanos.arn
     }
   }
 }
@@ -116,7 +167,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tempo" {
   bucket = aws_s3_bucket.tempo.id
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.tempo.arn
     }
   }
 }
@@ -204,6 +256,15 @@ data "aws_iam_policy_document" "thanos_s3" {
     ]
     resources = ["${aws_s3_bucket.thanos.arn}/*"]
   }
+  statement {
+    actions = [
+      "kms:Decrypt",
+      "kms:Encrypt",
+      "kms:GenerateDataKey",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.thanos.arn]
+  }
 }
 
 data "aws_iam_policy_document" "tempo_s3" {
@@ -218,6 +279,15 @@ data "aws_iam_policy_document" "tempo_s3" {
       "s3:DeleteObject",
     ]
     resources = ["${aws_s3_bucket.tempo.arn}/*"]
+  }
+  statement {
+    actions = [
+      "kms:Decrypt",
+      "kms:Encrypt",
+      "kms:GenerateDataKey",
+      "kms:DescribeKey",
+    ]
+    resources = [aws_kms_key.tempo.arn]
   }
 }
 

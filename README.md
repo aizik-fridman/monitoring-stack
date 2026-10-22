@@ -201,8 +201,9 @@ docker run --rm -v "${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.
 1. Provision an AWS VPC, EKS cluster, managed node groups, cluster OIDC
    provider, and encrypted S3 buckets with Terraform in `terraform/`.
 2. Configure a remote Terraform backend with locking before applying in a
-   shared environment. Review the public EKS endpoint access policy, subnet
-   topology, node sizing, and resource costs for the target account.
+   shared environment. The EKS API endpoint is private-only; run Terraform and
+   `kubectl` from the VPC or a connected VPN/runner. Review subnet topology,
+   node sizing, and resource costs for the target account.
 3. Apply the Kubernetes Helm values in `kubernetes/`. Install
    `kube-prometheus-stack` for Prometheus, Alertmanager, Node Exporter,
    kube-state-metrics, and Grafana; deploy VictoriaMetrics, Loki, Alloy, and
@@ -216,8 +217,10 @@ docker run --rm -v "${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.
    resource quotas, storage classes, alert receiver secrets, and
    multi-AZ capacity planning before production exposure.
 
-Terraform provisions a baseline VPC/EKS cluster, two private object-storage
-buckets, and separate IRSA roles restricted to each bucket. It intentionally
+Terraform provisions a baseline VPC/EKS cluster with a private-only control
+plane endpoint, restricted node security-group egress, two private S3 buckets
+encrypted with separate rotating KMS keys, and separate IRSA roles restricted
+to each bucket and key. It intentionally
 does not install Helm releases, configure DNS/TLS, or create a remote Terraform
 state backend. The Helm examples are starting overrides; review chart versions
 and chart-specific service account annotations against the exact chart releases
